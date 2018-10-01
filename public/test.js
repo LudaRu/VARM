@@ -17,6 +17,11 @@ socket.on('newPosition', (players) => {
 });
 
 
+socket.on('updateGame', (players) => {
+    console.log(players);
+});
+
+
 movement = {
     pUp: true,
     pLeft: false,
@@ -24,7 +29,7 @@ movement = {
     pRight: false,
 };
 
-document.addEventListener('pRightown', function (event) {
+document.addEventListener('keydown', function (event) {
     switch (event.keyCode) {
         case 65: // A
             movement.pLeft = true;

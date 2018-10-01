@@ -32,10 +32,42 @@ module.exports = (server) => {
                 pDown: false,
                 pRight: false,
             };
+
             socket.on('keyPress', function (data) {
-                this.pressKey = data; // fixme
+                if(data.pUp){
+                    this.pressKey = true; // fixme
+                }
             });
         }
+
+        update() {
+            if(this.pressKey.pUp){
+                console.log('ss');
+            }
+            if (this.pressKey.pUp){
+                this.y = this.y - this.spd;
+            }
+            if (this.pressKey.pDown){
+                this.y = this.y + this.spd;
+            }
+            if (this.pressKey.pLeft){
+                this.x = this.x - this.spd;
+            }
+            if (this.pressKey.pRight){
+                this.x = this.x + this.spd;
+            }
+        }
+
+        // Пакет игрока
+        getPackPlayer() {
+            return {
+                id: this.id,
+                x: this.x,
+                y: this.y,
+            }
+        }
+
+
     }
 
     class Room {
@@ -46,10 +78,14 @@ module.exports = (server) => {
 
 
         update() {
-            for(const i in this.playerList){
+            const pack = [];
+            for (const i in this.playerList) {
                 const player = this.playerList[i];
                 player.update();
+                pack.push(player.getPackPlayer());
             }
+
+            return pack;
         }
 
         addPlayer(socket) {
@@ -139,7 +175,7 @@ module.exports = (server) => {
     io.on('connection', (socket) => {
         room.addPlayer(socket);
 
-        socket.on('disconnect', () => {
+        socket.on('disconnect', (socket) => {
             room.deletePlayer(socket)
         });
 
@@ -149,10 +185,10 @@ module.exports = (server) => {
     // gameLoop
     setInterval(() => {
         const pack = {
-            player: room.update(),
+            room: room.update(),
         };
 
-        io.to(ROOM_NAME).emit(pack);
+        io.to(ROOM_NAME).emit('updateGame', pack);
 
 
         io.sockets.emit('newPosition', PLAYER_LIST);
