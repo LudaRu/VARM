@@ -3,6 +3,7 @@ class Room {
         this.roomName = roomName;
         this.playerList = [];
     }
+
     update() {
         const pack = [];
         for (const i in this.playerList) {
@@ -11,7 +12,9 @@ class Room {
             pack.push(player.getPackPlayer());
         }
 
-        return {playerList: pack};
+        return {
+            playerList: pack
+        };
     }
 
     addPlayer(socket) {
@@ -40,10 +43,11 @@ module.exports.Map = Map;
 
 // Базовая сущность
 class Entity {
-    constructor(id) {
+    constructor(id = null) {
         this.id = id;
         this.x = 0;
         this.y = 0;
+        this.angle = 0;
         this.spd = 5;
     }
 
@@ -69,10 +73,15 @@ class Player extends Entity {
             pLeft: false,
             pDown: false,
             pRight: false,
+            mouse:{
+                angle: 0,
+            }
         };
 
         const self = this;
         socket.on('keyPress', (data) => {
+            console.log('data', data);
+
             self.pressKey = data;
         });
     }
@@ -99,7 +108,28 @@ class Player extends Entity {
             x: this.x,
             y: this.y,
             r: this.radius,
+            angle: this.pressKey.mouse.angle,
         }
     }
 }
 module.exports.Player = Player;
+
+
+
+// Снаяряд
+class Bol  extends Entity{
+    constructor() {
+        super();
+    }
+
+    update() {
+        this._updatePosition();
+    }
+
+    _updatePosition() {
+        this.x += this.spd;
+        this.y += this.spd;
+    }
+
+}
+module.exports.Bol = Bol;

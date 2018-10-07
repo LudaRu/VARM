@@ -7,23 +7,23 @@ const ctx = example.getContext('2d');
 example.width  = 1000;
 example.height = 1000;
 
+let thisPlayerId = 0; // Id данного пользователя
+let thisPlayer = false; // Экземпляр класса Player данного пользователя
 
-socket.on('connected', (data) => {
-    console.log(data);
+socket.on('newPlayer', (id) => {
+    thisPlayerId = id;
 });
 
 
-
-
-
 socket.on('updateGame', (pack) => {
-
-
     ctx.clearRect(0, 0, example.width, example.height);
 
     const players = pack.room.playerList;
     for (let i in players) {
         const player = new Player(players[i]);
+        if(player.itsMe){
+            thisPlayer = player;
+        }
         player.drawPlayer(ctx);
         player.drawPlayerPosition(ctx);
         // ctx.fillText(self.score,self.x,self.y-60);
@@ -33,17 +33,40 @@ socket.on('updateGame', (pack) => {
 
 class Player {
     constructor(data) {
+        this.id = data.id;
         this.x = data.x;
         this.y = data.y;
         this.r = data.r; // радиус, круглый игрок
+        this.angle = data.angle; // Угол поврота в радианах
+        this.itsMe = (thisPlayerId === data.id); // флаг данного пользователя
     }
 
     // Отрисовка игрока
     drawPlayer(ctx) {
+        ctx.save();
+
+        ctx.translate(this.x, this.y); // Переместим полотно
+        ctx.rotate(this.angle);
+
+        // Круг
         ctx.beginPath();
-        ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2, false);
+        if (this.itsMe){
+            ctx.strokeStyle = "#ff0000";
+        }
+        else {
+            ctx.strokeStyle = "#000000";
+        }
+        ctx.arc(0, 0, this.r, 0, Math.PI * 2, false);
         ctx.closePath();
+        ctx.lineWidth = 1;
         ctx.stroke();
+
+        // Полоса направлдения
+        ctx.beginPath();
+        ctx.lineWidth = 2;
+        ctx.moveTo(0, 0);
+        ctx.lineTo(0+ this.r, 0);
+        ctx.restore();
     }
 
     // Рендер позиции игрока
@@ -51,6 +74,7 @@ class Player {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'hanging';
         ctx.fillText(`x:${this.x} y:${this.y}`, this.x, this.y + this.r);
+        ctx.stroke();
     }
 }
 
@@ -59,6 +83,16 @@ movement = {
     pLeft: false,
     pDown: false,
     pRight: false,
+    mouse: {},
+};
+
+// Клики мышки - Атаки
+document.onmousedown = function(event){
+    movement.mouse.click = true;
+};
+
+document.onmouseup = function(event){
+    movement.mouse.click = false;
 };
 
 document.addEventListener('keydown', function (event) {
@@ -94,6 +128,13 @@ document.addEventListener('keyup', function (event) {
     }
 });
 
+document.onmousemove = (e) => {
+    if(thisPlayer){
+        const angle = Math.atan2(e.clientY - thisPlayer.y, e.clientX - thisPlayer.x);
+        movement.mouse.angle = angle;
+    }
+};
+
 
 setInterval(() => {
     socket.emit('keyPress', movement);
@@ -101,7 +142,7 @@ setInterval(() => {
 
 
 
-
+// f();
 // function f() {
 //     const cnv = document.getElementById("cnv");
 //     const ctx = cnv.getContext("2d");
