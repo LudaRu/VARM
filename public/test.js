@@ -24,12 +24,58 @@ socket.on('updateGame', (pack) => {
         if(player.itsMe){
             thisPlayer = player;
         }
-        player.drawPlayer(ctx);
-        player.drawPlayerPosition(ctx);
+        player.draw(ctx);
+        player.drawPosition(ctx);
         // ctx.fillText(self.score,self.x,self.y-60);
 
     }
+
+    const boll = pack.room.bollList;
+    console.log('', boll);
+
+    if(boll){
+        boll.forEach((item, i, arr) => {
+            const boll = new Boll(item);
+            boll.draw(ctx);
+        });
+    }
 });
+
+class Boll {
+    constructor(data){
+        console.log('', data);
+
+        this.id = data.id;
+        this.x = data.x;
+        this.y = data.y;
+        this.r = data.r; // радиус, круглый игрок
+        this.angle = data.angle; // Угол поврота в радианах
+    }
+
+    draw(ctx) {
+        // ctx.save();
+        // ctx.translate(this.x, this.y); // Переместим полотно
+        // ctx.rotate(this.angle);
+
+        // Круг
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2, false);
+        ctx.closePath();
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        // ctx.restore();
+    }
+
+    // Рендер позиции игрока
+    drawPosition(ctx) {
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'hanging';
+        ctx.fillText(`x:${this.x} y:${this.y}`, this.x, this.y + this.r);
+        ctx.stroke();
+    }
+
+}
+
 
 class Player {
     constructor(data) {
@@ -42,7 +88,7 @@ class Player {
     }
 
     // Отрисовка игрока
-    drawPlayer(ctx) {
+    draw(ctx) {
         ctx.save();
 
         ctx.translate(this.x, this.y); // Переместим полотно
@@ -70,7 +116,7 @@ class Player {
     }
 
     // Рендер позиции игрока
-    drawPlayerPosition(ctx) {
+    drawPosition(ctx) {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'hanging';
         ctx.fillText(`x:${this.x} y:${this.y}`, this.x, this.y + this.r);
@@ -87,11 +133,11 @@ movement = {
 };
 
 // Клики мышки - Атаки
-document.onmousedown = function(event){
+document.onmousedown = function(event){ //console.log(' ', movement );
     movement.mouse.click = true;
 };
 
-document.onmouseup = function(event){
+document.onmouseup = function(event){ //console.log(' ', movement );
     movement.mouse.click = false;
 };
 
@@ -136,7 +182,7 @@ document.onmousemove = (e) => {
 };
 
 
-setInterval(() => {
+setInterval(() => { //console.log(' ', movement );
     socket.emit('keyPress', movement);
 }, 1000 / 60);
 

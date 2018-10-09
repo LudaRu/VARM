@@ -1,25 +1,65 @@
 class Room {
     constructor(roomName) {
         this.roomName = roomName;
-        this.playerList = [];
+        this.playerList = []; // Тут кранятся объекты класса Player, короче список игроков
+        this.bolList = []; // Тут кранятся объекты класса Player, короче список игроков
     }
 
     update() {
-        const pack = [];
+
+        const packPlayer = [];
+        for (const i in this.playerList) { // i - это просто ключ массива
+            const player = this.playerList[i]; // чо за цикл ? МАГИя, я понял, непривычный цикл
+            player.update();
+            packPlayer.push(player.getPack());
+        }
+
+        const packBoll = [];
+        for (const i in this.bolList) { // i - это просто ключ массива
+            const boll = this.bolList[i]; // чо за цикл ? МАГИя, я понял, непривычный цикл
+            boll.update();
+            // if((boll.x < 1200) && (boll.x > -200) && (boll.y > -200)&& (boll.y < 1200)){
+            //     packBoll.push(boll.getPack());
+            // }
+            if (boll.T < 300) {
+                packBoll.push(boll.getPack());
+            }
+            else {
+                this.deleteBoll(boll.id);
+            }
+        }
+
+        // кализ
         for (const i in this.playerList) {
             const player = this.playerList[i];
-            player.update();
-            pack.push(player.getPackPlayer());
+            for (const j in this.bolList) {
+                const boll = this.bolList[j];
+
+                if (((boll.x - player.x)*(boll.x - player.x) + (boll.y - player.y)*(boll.y - player.y) <= (player.radius+boll.radius)*(player.radius+boll.radius))){
+                    player.updateMass(boll.radius*boll.radius);
+                    this.deleteBoll(boll.id);
+                }
+
+            }
         }
 
         return {
-            playerList: pack
+            playerList: packPlayer,
+            bollList: packBoll
         };
     }
 
     addPlayer(socket) {
-        this.playerList[socket.id] = new Player(socket);
+        this.playerList[socket.id] = new Player(socket, this);
         socket.join(this.roomName);
+    }
+
+    addBol(id, player) {
+        this.bolList[id] = new Bol(id, player);
+    }
+
+    deleteBoll(id) {
+        delete this.bolList[id];
     }
 
     deletePlayer(socket) {
@@ -47,6 +87,7 @@ class Entity {
         this.id = id;
         this.x = 0;
         this.y = 0;
+        this.radius = 1;
         this.angle = 0;
         this.spd = 5;
     }
@@ -65,8 +106,9 @@ module.exports.Entity = Entity;
 
 class Player extends Entity {
 
-    constructor(socket) {
+    constructor(socket, Room) {
         super(socket.id);
+        this.Room = Room;
         this.radius = 10;
         this.pressKey = {
             pUp: false,
@@ -80,13 +122,16 @@ class Player extends Entity {
 
         const self = this;
         socket.on('keyPress', (data) => {
-            console.log('data', data);
-
             self.pressKey = data;
+            if(data.mouse.click){
+                const id = Math.floor(Math.random() * (1000 - 1 + 1)) + 1;
+                this.Room.addBol(id, this);
+            }
         });
     }
 
-    update() {
+    update()
+    {
         if (this.pressKey.pUp) {
             this.y = this.y - this.spd;
         }
@@ -99,10 +144,15 @@ class Player extends Entity {
         if (this.pressKey.pRight) {
             this.x = this.x + this.spd;
         }
+
+    }
+
+    updateMass(mass){
+        this.radius = this.radius + mass/(this.radius*this.radius);
     }
 
     // Пакет игрока
-    getPackPlayer() {
+    getPack() {
         return {
             id: this.id,
             x: this.x,
@@ -115,21 +165,51 @@ class Player extends Entity {
 module.exports.Player = Player;
 
 
-
 // Снаяряд
-class Bol  extends Entity{
-    constructor() {
-        super();
+class Bol extends Entity {
+    constructor(id, player) {
+        super(id);
+        this.Player = player;
+        this.angle = player.pressKey.mouse.angle;
+        this.x = player.x + Math.cos(this.angle)* (player.radius+  player.radius/4);
+        this.y = player.y + Math.sin(this.angle)* (player.radius+  player.radius/4);
+        this.T =0;
+        this.radius = player.radius/4;
     }
 
+    getPack() {
+        return {
+            id: this.id,
+            x: this.x,
+            y: this.y,
+            r: this.radius,
+            angle: this.angle,
+        }
+    }
     update() {
-        this._updatePosition();
-    }
+        this.T++;
+        const lodX = this.x;
+        const lodY = this.y;
+        this.x += Math.cos(this.angle)*this.spd*2;
+        this.y += Math.sin(this.angle)*this.spd*2;
 
-    _updatePosition() {
-        this.x += this.spd;
-        this.y += this.spd;
-    }
 
+        if (this.x >= 1000){
+            this.x = 1000;
+            this.angle += 2 * Math.acos(Math.sin(this.angle));
+        }
+        if (this.y >= 1000){
+            this.y = 1000;
+            this.angle -= 2 * Math.acos(Math.cos(this.angle));
+        }
+        if (this.y <= 0){
+            this.y = 0;
+            this.angle += 2 * Math.acos(Math.cos(this.angle));
+        }
+        if (this.x <= 0){
+            this.x = 0;
+            this.angle -= 2 * Math.acos(Math.sin(this.angle));
+        }
+    }
 }
 module.exports.Bol = Bol;
