@@ -21,12 +21,12 @@ class Room {
             // if((boll.x < 1200) && (boll.x > -200) && (boll.y > -200)&& (boll.y < 1200)){
             //     packBoll.push(boll.getPack());
             // }
-            if (boll.T < 300) {
-                packBoll.push(boll.getPack());
-            }
-            else {
+
+            if(boll.radius < 1){
                 this.deleteBoll(boll.id);
             }
+            else {packBoll.push(boll.getPack());}
+            // }
         }
 
         // кализ
@@ -197,18 +197,28 @@ class Bol extends Entity {
         if (this.x >= 1000){
             this.x = 1000;
             this.angle += 2 * Math.acos(Math.sin(this.angle));
+            this.tuck();
         }
         if (this.y >= 1000){
             this.y = 1000;
             this.angle -= 2 * Math.acos(Math.cos(this.angle));
+            this.tuck();
         }
         if (this.y <= 0){
             this.y = 0;
             this.angle += 2 * Math.acos(Math.cos(this.angle));
+            this.tuck();
         }
         if (this.x <= 0){
             this.x = 0;
             this.angle -= 2 * Math.acos(Math.sin(this.angle));
+            this.tuck();
+        }
+    }
+
+    tuck(){
+        if(Math.random() >= 0.5){
+            this.radius -= this.radius/4
         }
     }
 }
